@@ -151,10 +151,8 @@ echo.
 echo memhog is available at:
 echo     /tmp/memhog
 echo.
-echo Verify container:
+echo Example next commands:
 echo     podman ps
-echo.
-echo Safe test command:
 echo     podman exec %NAME% /tmp/memhog 16 TEST
 echo.
 echo To stop the environment:
@@ -163,10 +161,12 @@ echo.
 echo IMPORTANT:
 echo This setup does NOT trigger the OOM condition yet.
 echo.
-pause
-endlocal
-'''
+echo The window will now stay open for your next command.
+echo Type EXIT when you are finished.
+echo.
 
+cmd /k
+'''
 out = Path("/mnt/data/start_oom_demo_admin.bat")
 out.write_text(bat, encoding="utf-8", newline="\r\n")
 print(out)
