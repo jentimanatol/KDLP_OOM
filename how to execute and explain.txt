@@ -1,0 +1,105 @@
+Use this sequence after KDLP_OOM_START.bat says READY.
+
+Start Process A:
+podman exec -d oom-demo /tmp/memhog 80 A
+
+Say:
+
+“I am starting Process A. It will allocate about 80 MB of memory and keep it allocated.”
+
+Start Process B:
+podman exec -d oom-demo /tmp/memhog 80 B
+
+Say:
+
+“Now I start Process B with the same memory usage. At this point A and B should be treated similarly.”
+
+Show the running processes:
+podman top oom-demo pid args
+
+You should see something like:
+
+PID   COMMAND
+1     /usr/bin/sleep infinity
+3     /tmp/memhog 80 A
+4     /tmp/memhog 80 B
+
+Say:
+
+“Here we can see both processes running. I need their PIDs because the OOM values are available under /proc.”
+
+Use the actual PIDs shown on your screen. If A is 3 and B is 4, continue with these.
+
+Show A's OOM score:
+podman exec oom-demo cat /proc/3/oom_score
+
+Say:
+
+“This is Process A’s current oom_score. A larger value means the process is a stronger candidate during an out-of-memory situation.”
+
+Show A's adjustment value:
+podman exec oom-demo cat /proc/3/oom_score_adj
+
+Say:
+
+“This is oom_score_adj. It lets us influence the kernel’s decision.”
+
+Show B's score:
+podman exec oom-demo cat /proc/4/oom_score
+
+Then:
+
+podman exec oom-demo cat /proc/4/oom_score_adj
+
+Say:
+
+“Because A and B are using about the same amount of memory and have the same adjustment, their scores should be similar.”
+
+Increase A's OOM preference:
+podman exec oom-demo sh -c "echo 1000 > /proc/3/oom_score_adj"
+
+Say:
+
+“Now I set A’s oom_score_adj to 1000. This makes Process A much more likely to be selected if memory becomes exhausted.”
+
+Check A again:
+podman exec oom-demo cat /proc/3/oom_score
+
+Then:
+
+podman exec oom-demo cat /proc/3/oom_score_adj
+
+Say:
+
+“Now A’s OOM score is much higher than before.”
+
+Start Process C and create memory pressure:
+podman exec -d oom-demo /tmp/memhog 120 C
+
+Say:
+
+“Now Process C requests another 120 MB. The container is limited to 256 MB, so the kernel has to handle the memory shortage.”
+
+Show which processes remain:
+podman top oom-demo pid args
+
+You should see B and C, but A should be gone.
+
+Say:
+
+“Process A is no longer running. Linux selected A because we increased its OOM preference.”
+
+Show the kernel event counter:
+podman exec oom-demo cat /sys/fs/cgroup/memory.events.local
+
+Look for:
+
+oom_kill 1
+
+Say:
+
+“oom_kill 1 confirms that the kernel terminated one process because of the out-of-memory condition.”
+
+Your final sentence:
+
+“This shows that Linux does not select a process randomly. It uses memory usage and values such as oom_score and oom_score_adj to decide which process should be stopped.”
